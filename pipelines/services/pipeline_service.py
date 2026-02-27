@@ -56,9 +56,16 @@ def _write_database(df: pd.DataFrame, run: PipelineRun) -> None:
     )
 
 
-def run_pipeline(pipeline: Pipeline, uploaded_file: UploadedFile) -> PipelineRun:
+def run_pipeline(
+    pipeline: Pipeline, uploaded_file: UploadedFile, destination: str = "csv"
+) -> PipelineRun:
     """
     Execute a pipeline: validate file → create run → read → transform → write.
+
+    Args:
+        pipeline:      The Pipeline instance to execute.
+        uploaded_file: The uploaded CSV or Excel file.
+        destination:   Where to write output — "csv" or "database".
 
     Returns the completed or failed PipelineRun instance.
     Raises PipelineExecutionError for pre-run validation failures.
@@ -89,27 +96,27 @@ def run_pipeline(pipeline: Pipeline, uploaded_file: UploadedFile) -> PipelineRun
         df = run_transforms(df, config)
 
         # Write
-        dest_type = config.get("destination_type", "csv")
-
-        if dest_type == "csv":
-            filename = config.get("destination_filename", "output.csv")
+        if destination == "csv":
+            filename = f"pipeline_{pipeline.pk}_run_{run.pk}.csv"
             csv_bytes = _write_csv(df)
-            run.output_file.save(filename, ContentFile(csv_bytes), save=False)
+            # save=True writes the file to storage AND calls run.save() immediately,
+            # so output_file is committed in its own UPDATE before status is set.
+            run.output_file.save(filename, ContentFile(csv_bytes), save=True)
 
-        elif dest_type == "database":
+        elif destination == "database":
             _write_database(df, run)
 
         run.status = PipelineRun.Status.COMPLETED
-        run.save()
+        run.save(update_fields=["status"])
 
     except (ColumnMismatchError, InvalidExpressionError, TransformError) as exc:
         run.status = PipelineRun.Status.FAILED
         run.error_message = str(exc)
-        run.save()
+        run.save(update_fields=["status", "error_message"])
 
     except Exception as exc:
         run.status = PipelineRun.Status.FAILED
         run.error_message = str(exc)
-        run.save()
+        run.save(update_fields=["status", "error_message"])
 
     return run

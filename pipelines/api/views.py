@@ -44,7 +44,7 @@ class PipelineViewSet(
                 {
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "File upload is required.",
+                        "message": "Invalid request parameters.",
                         "details": trigger_ser.errors,
                     }
                 },
@@ -52,9 +52,10 @@ class PipelineViewSet(
             )
 
         uploaded_file = trigger_ser.validated_data["file"]
+        destination = trigger_ser.validated_data["destination"]
 
         try:
-            pipeline_run = run_pipeline(pipeline, uploaded_file)
+            pipeline_run = run_pipeline(pipeline, uploaded_file, destination)
         except PipelineExecutionError as exc:
             return Response(
                 {"error": {"code": exc.code, "message": exc.message}},

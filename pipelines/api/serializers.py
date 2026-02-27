@@ -36,3 +36,7 @@ class PipelineRunSerializer(serializers.ModelSerializer):
 
 class PipelineRunTriggerSerializer(serializers.Serializer):
     file = serializers.FileField(required=True)
+    destination = serializers.ChoiceField(
+        choices=["csv", "database"],
+        default="csv",
+    )

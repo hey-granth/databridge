@@ -1,7 +1,8 @@
 """
 Pipeline configuration validator.
 
-Validates the JSON configuration stored on a Pipeline model instance.
+Validates only transformation-related fields in the pipeline configuration.
+Source type is inferred from the uploaded file. Destination is passed at run time.
 Returns a list of error dicts with 'field' and 'message' keys.
 """
 
@@ -10,8 +11,6 @@ from __future__ import annotations
 import re
 from typing import Any
 
-SUPPORTED_SOURCE_TYPES = {"csv", "excel"}
-SUPPORTED_DESTINATION_TYPES = {"database", "csv"}
 SUPPORTED_FILTER_OPERATORS = {"eq", "gt", "lt", "contains"}
 SUPPORTED_EXPRESSION_FUNCS = {"concat", "add"}
 
@@ -19,46 +18,11 @@ _EXPR_RE = re.compile(r"^(\w+)\((.+)\)$", re.DOTALL)
 
 
 def validate_config(config: Any) -> list[dict[str, str]]:
-    """Validate a pipeline config dict. Returns a list of errors (empty = valid)."""
+    """Validate transformation fields in a pipeline config dict. Returns a list of errors (empty = valid)."""
     errors: list[dict[str, str]] = []
 
     if not isinstance(config, dict):
         return [{"field": "configuration", "message": "Must be a JSON object."}]
-
-    # source_type
-    source_type = config.get("source_type")
-    if source_type is None:
-        errors.append({"field": "configuration.source_type", "message": "Required."})
-    elif source_type not in SUPPORTED_SOURCE_TYPES:
-        errors.append(
-            {
-                "field": "configuration.source_type",
-                "message": f"Unsupported. Allowed: {sorted(SUPPORTED_SOURCE_TYPES)}.",
-            }
-        )
-
-    # destination_type
-    dest_type = config.get("destination_type")
-    if dest_type is None:
-        errors.append(
-            {"field": "configuration.destination_type", "message": "Required."}
-        )
-    elif dest_type not in SUPPORTED_DESTINATION_TYPES:
-        errors.append(
-            {
-                "field": "configuration.destination_type",
-                "message": f"Unsupported. Allowed: {sorted(SUPPORTED_DESTINATION_TYPES)}.",
-            }
-        )
-
-    # destination-specific fields
-    if dest_type == "csv" and not config.get("destination_filename"):
-        errors.append(
-            {
-                "field": "configuration.destination_filename",
-                "message": "Required when destination_type is 'csv'.",
-            }
-        )
 
     # column_mapping
     mapping = config.get("column_mapping")
