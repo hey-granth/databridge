@@ -1,16 +1,11 @@
 [project]
 name = "databridge"
 version = "0.1.0"
-description = "Add your description here"
+description = "A simple configuration-driven ETL pipeline API built with Django and DRF."
 requires-python = ">=3.13"
 dependencies = [
-    "celery>=5.6.2",
     "django>=6.0.2",
-    "django-celery-results>=2.6.0",
     "djangorestframework>=3.16.1",
     "openpyxl>=3.1.5",
     "pandas>=3.0.1",
-    "python-dotenv>=1.2.1",
-    "redis>=7.2.1",
-    "ruff>=0.15.4",
 ]
